@@ -1,13 +1,17 @@
+//node package for mysql
 var mysql = require("mysql");
 
+//node package for inquirer to enable CLI prompts to user
 var inquirer = require("inquirer");
 
 //loads environment variables from .env file
 //.env holds access keys for twitter and spotify APIs
 require("dotenv").config();
 
+//node package to print database query results to CLI in table format
 const cTable = require('console.table');
 
+//create connection to local host(server) bamazon database
 var connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
@@ -20,14 +24,21 @@ var connection = mysql.createConnection({
   database: "bamazon"
 });
 
+//connect to bamazon database
 connection.connect(function(err) {
-  if (err) throw err;
 
+  if (err) { 
+    console.log(err);
+  }
+
+  // call inventory management function
   invManage();
 });
 
+//inventory management function
 function invManage() {
 
+  //prompt inventory manager to confirm what action to take
   inquirer.prompt([
     {
       name: "choice",
@@ -43,29 +54,43 @@ function invManage() {
   ]).then(function(answer) {
     
     if(answer.choice === "View Products for Sale") {
+
+      //call function to view all products for sale
       vprod();
     } else if (answer.choice === "View Low Inventory") {
+
+      //call function to view all products with low inventory
       vlowinv();
     } else if (answer.choice === "Add to Inventory") {
+
+      //call function to add inventory to a specific item
       addinv();
     } else if (answer.choice === "Add New Product") {
+
+      //call function to add a new product for sale
       addnewprod();
     }
   });
 }
 
+//function to view all products for sale
 function vprod() {
 
+  //query bamazon database for all product table records
   connection.query("SELECT * FROM product",
     function(err, result) {
+
       if(err) {
         console.log(err);
       }
 
+      // print results to CLI in table format
       console.log("\n");
       console.table(result);
     }
   );
+
+  //end connection to bamazon
   connection.end(function(err) {
     if(err) {
       console.log(err);
@@ -73,17 +98,23 @@ function vprod() {
   });
 }
 
+//function to view all products with low inventory
 function vlowinv() {
+
+  //query database for all records in product table with stock quantity < 5
   connection.query("SELECT * FROM product WHERE stock_quantity < 5",
     function(err, result) {
       if(err) {
         console.log(err);
       }
 
+      // print results to CLI in table format
       console.log("\n");
       console.table(result);
     }
   );
+
+  //end connection to bamazon
   connection.end(function(err) {
     if(err) {
       console.log(err);
@@ -91,10 +122,13 @@ function vlowinv() {
   });
 }
 
+//function to add inventory to a specific item
 function addinv() {
 
+  //call function to print current product inventory to CLI
   vprod();
 
+  //prompt user to determine which item to increase inventory an by how many
   inquirer.prompt([
     {
       name: "item_id",
@@ -108,11 +142,13 @@ function addinv() {
     }
   ]).then(function(answer) {
 
+    //store user responses in variables and convert to numbers
     var itemID = parseInt(answer.item_id);
     var addQty = parseInt(answer.add_qty);
 
     if(typeof addQty === "number") {
 
+      //query bamazon database to increase inventory by addQty for itemID
       connection.query("UPDATE product SET stock_quantity = stock_quantity + ? WHERE item_id = ?",
         [addQty, itemID],          
         function(err, result) {
@@ -120,19 +156,24 @@ function addinv() {
             console.log(err);
           }
 
+          //message to user that transaction was successful
           console.log("\n Stock Quantity of item " + itemID + " increased by " + addQty + " units.");
 
+          //call function to display table of all products to show new inventory quantity
           vprod();
         }
       );
     } else {
+      //call back function to add inventory if user did not enter a number
       addinv();
     }
   });
 }
 
+//function to add a new product for sale
 function addnewprod() {
 
+  //prompt user for data needed to add a new record to products table
   inquirer.prompt([
     {
       name: "prod_name",
@@ -156,11 +197,13 @@ function addnewprod() {
     }
   ]).then(function(answer) {
 
+    //store user responses in variables and convert appropriate values to numbers
     var prodName = answer.prod_name;
     var prodDept = answer.prod_dept;
     var prodPrice = parseInt(answer.prod_price);
     var prodQty = parseInt(answer.prod_qty);
 
+    //query bamazon to insert new record into products table
     connection.query("INSERT INTO product SET ?",
         [
           {
@@ -175,8 +218,10 @@ function addnewprod() {
             console.log(err);
           }
 
+          //messsage to user to indicate that transaction was successful
           console.log(result.affectedRows + " new record added.  New item_id = " + result.insertId + "\n");
 
+          //call function to display table of all products to show new item for sale
           vprod();
         }
       );
