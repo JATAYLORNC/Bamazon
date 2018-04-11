@@ -63,7 +63,7 @@ function purchaseItem() {
         choices: function() {
           var choiceArray = [];
           for (var i = 0; i < results.length; i++) {
-            choiceArray.push(results[i].item_id.toString());
+            choiceArray.push(results[i].product_name.toString());
           }
           return choiceArray;
         },
@@ -82,7 +82,7 @@ function purchaseItem() {
       for(var i=0; i< results.length; i++) {
 
         //check if query result is item user wishes to purchase
-        if(results[i].item_id === parseInt(answer.choice)) {
+        if(results[i].product_name === answer.choice) {
           
           //save purchase item record in variable
           chosenItem = results[i];

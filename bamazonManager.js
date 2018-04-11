@@ -125,8 +125,19 @@ function vlowinv() {
 //function to add inventory to a specific item
 function addinv() {
 
-  //call function to print current product inventory to CLI
-  vprod();
+  //query bamazon database for all product table records
+  connection.query("SELECT * FROM product",
+    function(err, result) {
+
+      if(err) {
+        console.log(err);
+      }
+
+      // print results to CLI in table format
+      console.log("\n");
+      console.table(result);
+    }
+  );
 
   //prompt user to determine which item to increase inventory an by how many
   inquirer.prompt([
@@ -173,57 +184,77 @@ function addinv() {
 //function to add a new product for sale
 function addnewprod() {
 
-  //prompt user for data needed to add a new record to products table
-  inquirer.prompt([
-    {
-      name: "prod_name",
-      type: "input",
-      message: "What is the name of the product you'd like to add?"
-    },
-    {
-      name: "prod_dept",
-      type: "input",
-      message: "What department does the product belong to?"
-    },
-    {
-      name: "prod_price",
-      type: "input",
-      message: "What is the price of the product?"
-    },
-    {
-      name: "prod_qty",
-      type: "input",
-      message: "How many units would you like to add to the inventory?"
+  //query bamazon departments table to get all deparment names
+  connection.query("SELECT * FROM departments", function(err, results) {
+
+    //error handling
+    if(err) {
+      console.log(err);
     }
-  ]).then(function(answer) {
 
-    //store user responses in variables and convert appropriate values to numbers
-    var prodName = answer.prod_name;
-    var prodDept = answer.prod_dept;
-    var prodPrice = parseInt(answer.prod_price);
-    var prodQty = parseInt(answer.prod_qty);
+    console.log("\n");
 
-    //query bamazon to insert new record into products table
-    connection.query("INSERT INTO product SET ?",
-        [
-          {
-            product_name: prodName,
-            department_name: prodDept,
-            price: prodPrice,
-            stock_quantity: prodQty
+    //prompt user for data needed to add a new record to products table
+    inquirer.prompt([
+      {
+        name: "prod_name",
+        type: "input",
+        message: "What is the name of the product you'd like to add?"
+      },
+      {
+        name: "prod_dept",
+        type: "list",
+        choices: function() {
+          var choiceArray = [];
+          for (var i = 0; i < results.length; i++) {
+            choiceArray.push(results[i].department_name);
           }
-        ],
-        function(err, result) {
-          if(err) {
-            console.log(err);
+          return choiceArray;
+        },
+        message: "What department does the product belong to?"
+      },
+      {
+        name: "prod_price",
+        type: "input",
+        message: "What is the price of the product?"
+      },
+      {
+        name: "prod_qty",
+        type: "input",
+        message: "How many units would you like to add to the inventory?"
+      }
+    ]).then(function(answer) {
+
+      //store user responses in variables and convert appropriate values to numbers
+      var prodName = answer.prod_name;
+      var prodDept = answer.prod_dept;
+      var prodPrice = parseFloat(answer.prod_price);
+      var prodQty = parseFloat(answer.prod_qty);
+      var prodSales = 0;
+
+      //query bamazon to insert new record into products table
+      connection.query("INSERT INTO product SET ?",
+          [
+            {
+              product_name: prodName,
+              department_name: prodDept,
+              price: prodPrice,
+              stock_quantity: prodQty,
+              product_sales: 0
+            }
+          ],
+          function(err, result) {
+            if(err) {
+              console.log(err);
+            }
+
+            //messsage to user to indicate that transaction was successful
+            console.log("\n" + result.affectedRows + " new record added.  New item_id = " + result.insertId + "\n");
+
+            //call function to display table of all products to show new item for sale
+            vprod();
           }
-
-          //messsage to user to indicate that transaction was successful
-          console.log(result.affectedRows + " new record added.  New item_id = " + result.insertId + "\n");
-
-          //call function to display table of all products to show new item for sale
-          vprod();
-        }
-      );
+        );
+    });
   });
 }

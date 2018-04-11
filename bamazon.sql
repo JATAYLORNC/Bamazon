@@ -80,3 +80,7 @@ INSERT INTO departments (department_name, over_head_costs)
 VALUES("Office Furniture", 22000); 
 
 SELECT * FROM departments;
+
+UPDATE product SET product_sales = 0 WHERE product_name = "Microwave Oven";
+
+DELETE FROM product WHERE item_id = 14;
